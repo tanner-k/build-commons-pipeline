@@ -1,0 +1,57 @@
+{
+  "topic": "Use Claude to summarize any PDF in 30 seconds",
+  "template": "explainer",
+  "hook": {
+    "id": "hook",
+    "text": "Stop reading 50 page PDFs like it's 2020.",
+    "visual_type": "text_card",
+    "visual_prompt": null,
+    "duration_estimate_s": 2.8,
+    "caption_emphasis": ["Stop", "2020"]
+  },
+  "segments": [
+    {
+      "id": "seg-1",
+      "text": "Drag any PDF into Claude and ask for the five decisions that matter.",
+      "visual_type": "screen_recording",
+      "visual_prompt": null,
+      "duration_estimate_s": 6.0,
+      "caption_emphasis": ["five", "decisions"]
+    },
+    {
+      "id": "seg-2",
+      "text": "It reads every page so you can skim only what changed.",
+      "visual_type": "ai_image",
+      "visual_prompt": "Clean isometric illustration of a tall stack of paper documents compressing into a single glowing summary card, dark navy background, warm amber accent light",
+      "duration_estimate_s": 5.5,
+      "caption_emphasis": ["every", "page"]
+    },
+    {
+      "id": "seg-3",
+      "text": "Then paste the summary into your notes and you're done before the meeting starts.",
+      "visual_type": "ai_broll",
+      "visual_prompt": "Smooth cinematic close-up of hands typing on a laptop in a dim modern office, soft amber desk light, shallow depth of field, 4k",
+      "duration_estimate_s": 6.5,
+      "caption_emphasis": ["done"]
+    }
+  ],
+  "cta": {
+    "id": "cta",
+    "text": "Follow Build Commons for one practical AI workflow every day.",
+    "visual_type": "text_card",
+    "visual_prompt": null,
+    "duration_estimate_s": 3.2,
+    "caption_emphasis": ["Follow"]
+  },
+  "target_duration_s": 30,
+  "platform_captions": {
+    "youtube": "Summarize any PDF in 30 seconds with Claude #shorts",
+    "tiktok": "You're still reading PDFs manually?? 💀 #ai #productivity",
+    "instagram": "The 30-second PDF workflow nobody showed you."
+  },
+  "hashtags": {
+    "youtube": ["#shorts", "#ai", "#claude", "#productivity"],
+    "tiktok": ["#ai", "#aitools", "#productivityhacks", "#claude"],
+    "instagram": ["#aitools", "#productivity", "#workflow"]
+  }
+}
