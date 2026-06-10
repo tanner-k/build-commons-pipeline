@@ -11,7 +11,9 @@ export const segmentSchema = z
     id: z.string().min(1),
     text: z.string().min(1),
     visual_type: z.enum(['ai_broll', 'ai_image', 'screen_recording', 'text_card']),
-    visual_prompt: z.string().nullable(),
+    // null means "no prompt needed" (text_card / screen_recording); the key may
+    // also be absent entirely (Python defaults it to None, and exclude_none dumps drop it).
+    visual_prompt: z.string().nullable().optional(),
     duration_estimate_s: z.number().positive(),
     caption_emphasis: z.array(z.string()),
   })
@@ -49,6 +51,8 @@ export const wordTimingSchema = z
   })
   .refine((w) => w.end_s >= w.start_s, {message: 'end_s must be >= start_s'});
 
+// Defaults to {} so partial asset objects (e.g. voiceover-only) parse successfully.
+// Render compositions must guard lookups: const words = assets.timings[segId] ?? [];
 export const videoAssetsSchema = z.object({
   voiceover: z.record(z.string()).default({}),
   visuals: z.record(z.string()).default({}),

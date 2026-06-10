@@ -47,4 +47,11 @@ describe('contract mirror', () => {
     const dup = {...sampleScript, cta: {...sampleScript.cta, id: 'seg-1'}};
     expect(() => videoScriptSchema.parse(dup)).toThrow(/unique/);
   });
+
+  it('accepts a segment with the visual_prompt key absent (Python exclude_none parity)', () => {
+    const {visual_prompt: _omitted, ...hookWithoutKey} = sampleScript.hook;
+    expect(() =>
+      videoScriptSchema.parse({...sampleScript, hook: hookWithoutKey}),
+    ).not.toThrow();
+  });
 });
