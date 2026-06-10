@@ -44,13 +44,6 @@ venv/
 .terraform/
 .terraform.lock.hcl
 
-# Husky internals
-.husky/_/
-
-# Tool caches
-.eslintcache
-.prettiercache
-
 # Remotion
 remotion/node_modules/
 remotion/out/
