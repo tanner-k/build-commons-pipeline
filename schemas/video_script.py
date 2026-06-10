@@ -6,7 +6,7 @@ schemas/fixtures/sample_video_script.json is validated by both sides.
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 VisualType = Literal["ai_broll", "ai_image", "screen_recording", "text_card"]
 TemplateName = Literal["explainer", "tutorial", "listicle", "comparison"]
@@ -17,6 +17,8 @@ AI_VISUAL_TYPES: frozenset[str] = frozenset({"ai_broll", "ai_image"})
 class Segment(BaseModel):
     """One narrated beat of the video with its visual."""
 
+    model_config = ConfigDict(frozen=True)
+
     id: str = Field(min_length=1)
     text: str = Field(min_length=1)
     visual_type: VisualType
@@ -26,7 +28,7 @@ class Segment(BaseModel):
 
     @model_validator(mode="after")
     def _ai_visuals_need_prompt(self) -> "Segment":
-        if self.visual_type in AI_VISUAL_TYPES and not self.visual_prompt:
+        if self.visual_type in AI_VISUAL_TYPES and not (self.visual_prompt or "").strip():
             raise ValueError(
                 f"visual_prompt is required when visual_type={self.visual_type!r}"
             )
@@ -35,6 +37,8 @@ class Segment(BaseModel):
 
 class VideoScript(BaseModel):
     """Everything downstream stages need to produce one video."""
+
+    model_config = ConfigDict(frozen=True)
 
     topic: str = Field(min_length=1)
     template: TemplateName
@@ -60,7 +64,9 @@ class VideoScript(BaseModel):
 class WordTiming(BaseModel):
     """One word from ElevenLabs word-level timestamps (caption sync)."""
 
-    word: str
+    model_config = ConfigDict(frozen=True)
+
+    word: str = Field(min_length=1)
     start_s: float = Field(ge=0)
     end_s: float
 
@@ -74,7 +80,17 @@ class WordTiming(BaseModel):
 class VideoAssets(BaseModel):
     """Shape of videos.asset_urls jsonb. Keys are segment ids."""
 
+    model_config = ConfigDict(frozen=True)
+
     voiceover: dict[str, str] = Field(default_factory=dict)
     visuals: dict[str, str] = Field(default_factory=dict)
     timings: dict[str, list[WordTiming]] = Field(default_factory=dict)
     thumbnail_base: str | None = None
+
+
+# Deliberately NOT validated here (downstream/QA concerns, not contract concerns):
+# - platform_captions/hashtags may be empty or have mismatched platform keys;
+#   Stage 5 publishing reads each platform independently.
+# - Sum of segment durations is not checked against target_duration_s; the
+#   estimate is advisory and real timing comes from ElevenLabs word timestamps.
+# - WordTiming allows end_s == start_s (zero-width words from TTS edge cases).

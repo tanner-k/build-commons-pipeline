@@ -52,6 +52,15 @@ class TestSegment:
         with pytest.raises(ValidationError):
             make_segment(visual_type="hologram")
 
+    def test_whitespace_only_prompt_rejected_for_ai_visuals(self):
+        with pytest.raises(ValidationError, match="visual_prompt"):
+            make_segment(visual_type="ai_image", visual_prompt="   ")
+
+    def test_segment_is_immutable(self):
+        seg = make_segment()
+        with pytest.raises(ValidationError):
+            seg.id = "mutated"
+
 
 class TestVideoScript:
     def test_valid_script_round_trips(self):
@@ -89,3 +98,11 @@ class TestAssets:
     def test_video_assets_defaults(self):
         assets = VideoAssets()
         assert assets.voiceover == {} and assets.timings == {} and assets.thumbnail_base is None
+
+    def test_empty_word_rejected(self):
+        with pytest.raises(ValidationError):
+            WordTiming(word="", start_s=0.0, end_s=0.5)
+
+    def test_zero_width_word_allowed(self):
+        timing = WordTiming(word="uh", start_s=1.0, end_s=1.0)
+        assert timing.end_s == timing.start_s

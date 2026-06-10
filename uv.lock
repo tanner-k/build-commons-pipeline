@@ -308,7 +308,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "crewai", specifier = ">=0.86" },
+    { name = "crewai", specifier = ">=1.14,<2" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic", specifier = ">=2.8" },
     { name = "supabase", specifier = ">=2.6" },
