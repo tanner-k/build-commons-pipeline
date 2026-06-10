@@ -40,3 +40,13 @@ def test_templates_seeded():
     assert "insert into templates" in sql
     for name in ("explainer", "tutorial", "listicle", "comparison"):
         assert name in sql
+
+
+def test_analytics_references_videos():
+    fk_targets = {
+        ref.find(exp.Table).name
+        for stmt in parsed_statements()
+        for ref in stmt.find_all(exp.Reference)
+        if ref.find(exp.Table) is not None
+    }
+    assert "videos" in fk_targets

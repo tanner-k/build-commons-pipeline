@@ -1,7 +1,7 @@
 -- 0001_init.sql — pipeline state, analytics, taste library, templates (spec §5)
 -- Apply via Supabase SQL editor or `supabase db push`.
 
-create extension if not exists "pgcrypto";
+-- TODO: enable RLS + service-role-only policies before any network exposure.
 
 create table if not exists videos (
     id uuid primary key default gen_random_uuid(),
@@ -51,7 +51,7 @@ create table if not exists taste_library (
     hook_type text
         check (hook_type in ('question', 'bold_claim', 'curiosity_gap', 'demo')),
     why_it_works text,
-    views bigint,
+    views bigint,                -- TODO: add index on views desc if library grows past ~10k rows
     added_by text not null default 'manual'
         check (added_by in ('manual', 'analyst_agent')),
     created_at timestamptz not null default now()
