@@ -34,14 +34,14 @@ export const SegmentVisual: React.FC<{segment: Segment; assets: VideoAssets}> = 
   if (segment.visual_type === 'text_card' || !url) {
     return <TextCard text={segment.text} />;
   }
-  if (segment.visual_type === 'ai_broll') {
+  if (segment.visual_type === 'ai_broll' || segment.visual_type === 'screen_recording') {
     return (
       <AbsoluteFill>
         <OffthreadVideo src={url} style={{width: '100%', height: '100%', objectFit: 'cover'}} muted />
       </AbsoluteFill>
     );
   }
-  // ai_image and screen_recording stills/uploads render as images
+  // ai_image stills render as images
   return (
     <AbsoluteFill>
       <Img src={url} style={{width: '100%', height: '100%', objectFit: 'cover'}} />

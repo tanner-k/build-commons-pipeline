@@ -5,7 +5,8 @@ import {isEmphasized} from '../lib/emphasis';
 import {BRAND} from '../lib/theme';
 import type {Segment, WordTiming} from '../types/video-script';
 
-const GROUP_SIZE = 4;
+// 3 words per line keeps worst-case caption width inside the 984px safe zone at 64px.
+const GROUP_SIZE = 3;
 
 export const Captions: React.FC<{segment: Segment; words: WordTiming[]}> = ({
   segment,
@@ -33,6 +34,7 @@ export const Captions: React.FC<{segment: Segment; words: WordTiming[]}> = ({
         right: BRAND.framePadding,
         textAlign: 'center',
         transform: `scale(${0.9 + 0.1 * pop})`,
+        whiteSpace: 'nowrap',
       }}
     >
       {group.map((w, i) => {
