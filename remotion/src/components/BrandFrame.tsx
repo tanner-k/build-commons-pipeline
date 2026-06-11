@@ -1,9 +1,10 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
+import {brandFontFamily} from '../lib/font';
 import {BRAND} from '../lib/theme';
 
 export const BrandFrame: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <AbsoluteFill style={{backgroundColor: BRAND.bg, fontFamily: BRAND.fontFamily}}>
+  <AbsoluteFill style={{backgroundColor: BRAND.bg, fontFamily: brandFontFamily}}>
     {children}
     <div
       style={{

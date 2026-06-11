@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {isEmphasized} from './emphasis';
+import {isEmphasized} from './theme';
 
 describe('isEmphasized', () => {
   it('matches case-insensitively ignoring punctuation', () => {
