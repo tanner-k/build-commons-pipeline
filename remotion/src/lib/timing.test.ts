@@ -8,6 +8,7 @@ import {
   fallbackTimings,
   segmentDurationS,
   totalDurationInFrames,
+  wordsForSegment,
 } from './timing';
 
 const script = videoScriptSchema.parse(sampleScript);
@@ -65,11 +66,38 @@ describe('activeWordIndex', () => {
     expect(activeWordIndex(words, 0.5)).toBe(0);
     expect(activeWordIndex(words, 2.5)).toBe(2);
   });
-  it('clamps before start and after end', () => {
-    expect(activeWordIndex(words, -1)).toBe(0);
+  it('returns -1 before the first word starts (leading silence — no highlight)', () => {
+    expect(activeWordIndex(words, -1)).toBe(-1);
+  });
+  it('clamps after the last word ends', () => {
     expect(activeWordIndex(words, 99)).toBe(3);
+  });
+  it('holds the previous word during inter-word silence gaps', () => {
+    const gappy = [
+      {word: 'a', start_s: 0, end_s: 0.5},
+      {word: 'b', start_s: 1.0, end_s: 1.5},
+    ];
+    expect(activeWordIndex(gappy, 0.75)).toBe(0); // in the gap: hold word 0
+    expect(activeWordIndex(gappy, 1.2)).toBe(1);
   });
   it('returns -1 for empty word list', () => {
     expect(activeWordIndex([], 1)).toBe(-1);
+  });
+});
+
+describe('wordsForSegment', () => {
+  it('returns real timings when present', () => {
+    const words = wordsForSegment(script.hook, assets);
+    expect(words.map((w) => w.word)).toContain('PDFs');
+  });
+  it('returns a copy, not a reference into assets', () => {
+    const words = wordsForSegment(script.hook, assets);
+    expect(words).not.toBe(assets.timings['hook']);
+    expect(words).toEqual(assets.timings['hook']);
+  });
+  it('falls back to even spacing when timings missing', () => {
+    const words = wordsForSegment(script.segments[0]!, assets);
+    expect(words.length).toBeGreaterThan(0);
+    expect(words[words.length - 1]!.end_s).toBeCloseTo(6.0);
   });
 });
