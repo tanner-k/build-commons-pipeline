@@ -25,6 +25,9 @@ export const Thumbnail: React.FC<ThumbnailProps> = ({headline, baseImageUrl}) =>
           lineHeight: 1.05,
           textShadow: '0 6px 32px rgba(0,0,0,0.8)',
           maxWidth: '85%',
+          // Long topics must never push the wordmark out of the 720px frame.
+          maxHeight: 420,
+          overflow: 'hidden',
         }}
       >
         {headline}

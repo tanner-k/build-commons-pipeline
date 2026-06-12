@@ -22,15 +22,15 @@ export const VideoBody: React.FC<
   return (
     <BrandFrame>
       {segments.map((segment, i) => {
-        const window = timeline[i];
-        if (!window) return null;
+        const win = timeline[i];
+        if (!win) return null;
         const voice = assets.voiceover[segment.id];
         const badgeIndex = bodyIds.has(segment.id) ? bodyIndex++ : -1;
         return (
           <Sequence
             key={segment.id}
-            from={window.from}
-            durationInFrames={window.durationInFrames}
+            from={win.from}
+            durationInFrames={win.durationInFrames}
             name={segment.id}
           >
             <SegmentVisual segment={segment} assets={assets} />
