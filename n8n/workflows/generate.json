@@ -1,0 +1,164 @@
+{
+  "name": "BC Stage 2 — Generate Assets + Render",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "minutes", "minutesInterval": 15}]}
+      },
+      "id": "trigger-15min",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id, script_json from videos where status = 'scripted' order by created_at limit 2"
+      },
+      "id": "fetch-scripted",
+      "name": "Fetch scripted videos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "script_json.segments",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "id"
+      },
+      "id": "split-segments",
+      "name": "Split segments",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $env.ELEVENLABS_VOICE_ID }}/with-timestamps",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"text\": {{ JSON.stringify($json[\"script_json.segments\"].text) }}, \"model_id\": \"eleven_multilingual_v2\"}"
+      },
+      "id": "tts",
+      "name": "ElevenLabs TTS per segment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, -160],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"contents\": [{\"parts\": [{\"text\": {{ JSON.stringify($json[\"script_json.segments\"].visual_prompt || \"\") }}}]}]}"
+      },
+      "id": "nano-banana",
+      "name": "Nano Banana image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:predictLongRunning",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"instances\": [{\"prompt\": {{ JSON.stringify($json[\"script_json.segments\"].visual_prompt || \"\") }}}]}"
+      },
+      "id": "veo",
+      "name": "Veo b-roll",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 160],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update videos set status = 'assets_ready', asset_urls = $1::jsonb where id = $2",
+        "options": {"queryReplacement": "={{ JSON.stringify($json.asset_urls) }},{{ $json.id }}"}
+      },
+      "id": "save-assets",
+      "name": "Save asset_urls",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3333/render",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"video_id\": \"{{ $json.id }}\"}"
+      },
+      "id": "trigger-render",
+      "name": "Trigger render",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update videos set qa_notes = concat(coalesce(qa_notes, ''), ' asset generation failed after retries — manual review') where id = $1",
+        "options": {"queryReplacement": "={{ $json.id }}"}
+      },
+      "id": "flag-manual",
+      "name": "Flag manual review",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [880, 240]
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {"main": [[{"node": "Fetch scripted videos", "type": "main", "index": 0}]]},
+    "Fetch scripted videos": {"main": [[{"node": "Split segments", "type": "main", "index": 0}]]},
+    "Split segments": {
+      "main": [[
+        {"node": "ElevenLabs TTS per segment", "type": "main", "index": 0},
+        {"node": "Nano Banana image", "type": "main", "index": 0},
+        {"node": "Veo b-roll", "type": "main", "index": 0}
+      ]]
+    },
+    "ElevenLabs TTS per segment": {
+      "main": [
+        [{"node": "Save asset_urls", "type": "main", "index": 0}],
+        [{"node": "Flag manual review", "type": "main", "index": 0}]
+      ]
+    },
+    "Nano Banana image": {
+      "main": [
+        [{"node": "Save asset_urls", "type": "main", "index": 0}],
+        [{"node": "Flag manual review", "type": "main", "index": 0}]
+      ]
+    },
+    "Veo b-roll": {
+      "main": [
+        [{"node": "Save asset_urls", "type": "main", "index": 0}],
+        [{"node": "Flag manual review", "type": "main", "index": 0}]
+      ]
+    },
+    "Save asset_urls": {"main": [[{"node": "Trigger render", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

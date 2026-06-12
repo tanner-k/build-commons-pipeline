@@ -1,0 +1,72 @@
+{
+  "name": "BC Stage 6 — Analytics Ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "days", "daysInterval": 1, "triggerAtHour": 6}]}
+      },
+      "id": "trigger-daily",
+      "name": "Daily 6am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id, platform_ids from videos where status = 'published' and published_at > now() - interval '30 days'"
+      },
+      "id": "fetch-published",
+      "name": "Fetch published videos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://youtubeanalytics.googleapis.com/v2/reports",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "ids", "value": "channel==MINE"},
+            {"name": "metrics", "value": "views,averageViewDuration,likes,shares"},
+            {"name": "dimensions", "value": "video"},
+            {"name": "filters", "value": "=video=={{ $json.platform_ids.youtube }}"},
+            {"name": "startDate", "value": "={{ $now.minus({days: 7}).toFormat('yyyy-MM-dd') }}"},
+            {"name": "endDate", "value": "={{ $now.toFormat('yyyy-MM-dd') }}"}
+          ]
+        }
+      },
+      "id": "yt-analytics",
+      "name": "YouTube analytics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into analytics (video_id, platform, views, avg_view_duration_s, likes, shares) values ($1, 'youtube', $2, $3, $4, $5)",
+        "options": {
+          "queryReplacement": "={{ $('Fetch published videos').item.json.id }},{{ $json.rows?.[0]?.[1] ?? 0 }},{{ $json.rows?.[0]?.[2] ?? 0 }},{{ $json.rows?.[0]?.[3] ?? 0 }},{{ $json.rows?.[0]?.[4] ?? 0 }}"
+        }
+      },
+      "id": "insert-analytics",
+      "name": "Insert analytics rows",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [660, 0]
+    }
+  ],
+  "connections": {
+    "Daily 6am": {"main": [[{"node": "Fetch published videos", "type": "main", "index": 0}]]},
+    "Fetch published videos": {"main": [[{"node": "YouTube analytics", "type": "main", "index": 0}]]},
+    "YouTube analytics": {"main": [[{"node": "Insert analytics rows", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

@@ -1,0 +1,107 @@
+{
+  "name": "BC Stage 5 — Publish",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "hours", "hoursInterval": 1}]}
+      },
+      "id": "trigger-hourly",
+      "name": "Hourly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id, topic, render_url, script_json from videos where status = 'approved' order by created_at limit 1"
+      },
+      "id": "fetch-approved",
+      "name": "Fetch approved video",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.topic }}",
+        "regionCode": "US",
+        "categoryId": "28",
+        "options": {
+          "description": "={{ $json.script_json.platform_captions.youtube }} {{ ($json.script_json.hashtags.youtube || []).join(' ') }}"
+        }
+      },
+      "id": "yt-upload",
+      "name": "YouTube upload",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [440, -120],
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/video/init/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"post_info\": {\"title\": {{ JSON.stringify($json.script_json.platform_captions.tiktok) }}, \"privacy_level\": \"PUBLIC_TO_EVERYONE\"}, \"source_info\": {\"source\": \"PULL_FROM_URL\", \"video_url\": {{ JSON.stringify($json.render_url) }}}}"
+      },
+      "id": "tiktok-post",
+      "name": "TikTok post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.IG_USER_ID }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"media_type\": \"REELS\", \"video_url\": {{ JSON.stringify($json.render_url) }}, \"caption\": {{ JSON.stringify($json.script_json.platform_captions.instagram) }}}"
+      },
+      "id": "ig-reel",
+      "name": "Instagram Reel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 120],
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update videos set status = 'published', published_at = now(), platform_ids = $1::jsonb where id = $2",
+        "options": {"queryReplacement": "={{ JSON.stringify($json.platform_ids) }},{{ $json.id }}"}
+      },
+      "id": "mark-published",
+      "name": "Mark published",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [660, 0]
+    }
+  ],
+  "connections": {
+    "Hourly": {"main": [[{"node": "Fetch approved video", "type": "main", "index": 0}]]},
+    "Fetch approved video": {
+      "main": [[
+        {"node": "YouTube upload", "type": "main", "index": 0},
+        {"node": "TikTok post", "type": "main", "index": 0},
+        {"node": "Instagram Reel", "type": "main", "index": 0}
+      ]]
+    },
+    "YouTube upload": {"main": [[{"node": "Mark published", "type": "main", "index": 0}]]},
+    "TikTok post": {"main": [[{"node": "Mark published", "type": "main", "index": 0}]]},
+    "Instagram Reel": {"main": [[{"node": "Mark published", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}
