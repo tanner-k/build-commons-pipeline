@@ -1,0 +1,89 @@
+import request from 'supertest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  fetchVideo: vi.fn(),
+  updateVideo: vi.fn(),
+  renderVideoJob: vi.fn(),
+}));
+
+vi.mock('./supabase', () => ({
+  fetchVideo: mocks.fetchVideo,
+  updateVideo: mocks.updateVideo,
+}));
+vi.mock('./render', () => ({
+  renderVideoJob: mocks.renderVideoJob,
+}));
+
+import {createApp} from './app';
+
+const app = createApp();
+
+const assetsReadyRow = {
+  id: 'vid-1',
+  status: 'assets_ready',
+  template: 'explainer',
+  topic: 'Topic',
+  script_json: {},
+  asset_urls: {},
+};
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
+
+describe('GET /healthz', () => {
+  it('returns ok', async () => {
+    const res = await request(app).get('/healthz');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ok: true});
+  });
+});
+
+describe('POST /render', () => {
+  it('400 when video_id missing', async () => {
+    const res = await request(app).post('/render').send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/video_id/);
+  });
+
+  it('404 when video not found', async () => {
+    mocks.fetchVideo.mockResolvedValue(null);
+    const res = await request(app).post('/render').send({video_id: 'nope'});
+    expect(res.status).toBe(404);
+  });
+
+  it('409 when video is not assets_ready', async () => {
+    mocks.fetchVideo.mockResolvedValue({...assetsReadyRow, status: 'scripted'});
+    const res = await request(app).post('/render').send({video_id: 'vid-1'});
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/assets_ready/);
+  });
+
+  it('renders, updates row to qa_pending, returns urls', async () => {
+    mocks.fetchVideo.mockResolvedValue(assetsReadyRow);
+    mocks.renderVideoJob.mockResolvedValue({
+      renderUrl: 'https://x/renders/vid-1.mp4',
+      thumbnailUrl: 'https://x/renders/vid-1.png',
+    });
+    const res = await request(app).post('/render').send({video_id: 'vid-1'});
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      ok: true,
+      render_url: 'https://x/renders/vid-1.mp4',
+      thumbnail_url: 'https://x/renders/vid-1.png',
+    });
+    expect(mocks.updateVideo).toHaveBeenCalledWith('vid-1', {
+      status: 'qa_pending',
+      render_url: 'https://x/renders/vid-1.mp4',
+    });
+  });
+
+  it('500 + row untouched when render fails', async () => {
+    mocks.fetchVideo.mockResolvedValue(assetsReadyRow);
+    mocks.renderVideoJob.mockRejectedValue(new Error('chromium crashed'));
+    const res = await request(app).post('/render').send({video_id: 'vid-1'});
+    expect(res.status).toBe(500);
+    expect(mocks.updateVideo).not.toHaveBeenCalled();
+  });
+});
