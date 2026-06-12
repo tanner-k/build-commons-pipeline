@@ -60,6 +60,11 @@ create table if not exists taste_library (
     created_at timestamptz not null default now()
 );
 
+-- Analyst promotions upsert on hook_text — duplicates must be impossible because
+-- this table seeds future hook generation. NULL hook_text rows are unaffected.
+create unique index if not exists taste_library_hook_text_uidx
+    on taste_library (hook_text);
+
 create table if not exists templates (
     name text primary key,
     version int not null default 1,

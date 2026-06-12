@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from agents.analyst import (
@@ -8,6 +10,7 @@ from agents.analyst import (
     fraction_at,
     pick_promotable_hooks,
     render_weekly_report,
+    run_weekly,
     score_video,
 )
 
@@ -90,3 +93,46 @@ class TestReport:
         assert "Stop doing X." in report
         assert "listicle" in report
         assert "Make more" in report and "Kill" in report
+
+
+class TestRunWeekly:
+    def _mock_client(self) -> tuple[MagicMock, dict[str, MagicMock]]:
+        table_names = ("videos", "analytics", "taste_library", "templates")
+        tables = {name: MagicMock() for name in table_names}
+        videos_result = MagicMock()
+        videos_result.data = [
+            {"id": "v1", "topic": "PDF workflow", "template": "explainer", "hook": "Stop doing X."}
+        ]
+        analytics_result = MagicMock()
+        analytics_result.data = [
+            {"video_id": "v1", "retention_curve": CURVE, "captured_at": "2026-06-10T00:00:00Z"}
+        ]
+        tables["videos"].select.return_value.eq.return_value.execute.return_value = videos_result
+        tables["analytics"].select.return_value.gte.return_value.execute.return_value = (
+            analytics_result
+        )
+        client = MagicMock()
+        client.table.side_effect = lambda name: tables[name]
+        return client, tables
+
+    def test_promotes_winners_via_upsert_and_writes_report(self, tmp_path):
+        client, tables = self._mock_client()
+
+        report_path = run_weekly(client=client, reports_dir=tmp_path)
+
+        # CURVE gives hold 0.82 and completion 0.45 — above both thresholds.
+        tables["taste_library"].upsert.assert_called_once()
+        rows, kwargs = (
+            tables["taste_library"].upsert.call_args.args,
+            tables["taste_library"].upsert.call_args.kwargs,
+        )
+        assert rows[0][0]["hook_text"] == "Stop doing X."
+        assert rows[0][0]["added_by"] == "analyst_agent"
+        assert kwargs.get("on_conflict") == "hook_text"
+
+        tables["templates"].update.assert_called_once_with({"avg_retention": 0.45})
+
+        assert report_path.exists()
+        content = report_path.read_text()
+        assert "Stop doing X." in content
+        assert "PDF workflow" in content

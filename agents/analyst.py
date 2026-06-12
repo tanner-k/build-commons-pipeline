@@ -49,7 +49,11 @@ def fraction_at(curve: Curve, t_s: float) -> float | None:
 
 
 def score_video(video_row: dict, retention_curve: Curve | None) -> VideoScore:
-    """Score a single video using its retention curve."""
+    """Score a single video using its retention curve.
+
+    completion_rate is the fraction at the last curve point — accurate when the
+    curve spans the full video duration (YouTube retention curves do).
+    """
     curve = retention_curve or []
     return VideoScore(
         video_id=str(video_row["id"]),
@@ -71,7 +75,7 @@ def pick_promotable_hooks(scores: list[VideoScore]) -> list[dict]:
             rows.append(
                 {
                     "hook_text": s.hook,
-                    "niche": "ai-tools",
+                    "niche": "ai-tools",  # TODO: derive from video niche if multi-niche lands
                     "why_it_works": (
                         f"Promoted by analyst: 3s-hold {s.hold_rate_3s:.0%}, "
                         f"completion {s.completion_rate:.0%} on '{s.topic}'"
@@ -161,7 +165,9 @@ def run_weekly(client: Client | None = None, reports_dir: Path | None = None) ->
     scores = [score_video(v, latest_curve.get(str(v["id"]))) for v in videos]
     promotions = pick_promotable_hooks(scores)
     if promotions:
-        client.table("taste_library").insert(promotions).execute()
+        # Upsert on hook_text (unique index in 0001_init.sql): re-running the same
+        # week must not accumulate duplicate rows in the library that seeds hooks.
+        client.table("taste_library").upsert(promotions, on_conflict="hook_text").execute()
 
     # Template health: avg retention per template from this week's scores.
     by_template: dict[str, list[float]] = {}
