@@ -5,6 +5,8 @@
 
 create table if not exists videos (
     id uuid primary key default gen_random_uuid(),
+    -- 'rendered' is reserved but currently unused: the render server moves
+    -- assets_ready -> qa_pending in one step (spec §7 Stage 3).
     status text not null default 'ideation'
         check (status in (
             'ideation', 'scripted', 'assets_ready', 'rendered',
@@ -17,6 +19,7 @@ create table if not exists videos (
     script_json jsonb,
     asset_urls jsonb,
     render_url text,
+    thumbnail_url text,          -- Stage 4 QA reviews the auto-rendered thumbnail from here
     platform_ids jsonb,          -- {"youtube": "...", "tiktok": "...", "instagram": "..."}
     qa_notes text,               -- rejection notes feed Stage 2/3 retry
     created_at timestamptz not null default now(),

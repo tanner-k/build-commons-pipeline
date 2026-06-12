@@ -76,6 +76,7 @@ describe('POST /render', () => {
     expect(mocks.updateVideo).toHaveBeenCalledWith('vid-1', {
       status: 'qa_pending',
       render_url: 'https://x/renders/vid-1.mp4',
+      thumbnail_url: 'https://x/renders/vid-1.png',
     });
   });
 

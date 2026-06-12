@@ -29,7 +29,11 @@ export const createApp = (): Express => {
         return;
       }
       const {renderUrl, thumbnailUrl} = await renderVideoJob(video);
-      await updateVideo(videoId, {status: 'qa_pending', render_url: renderUrl});
+      await updateVideo(videoId, {
+        status: 'qa_pending',
+        render_url: renderUrl,
+        thumbnail_url: thumbnailUrl,
+      });
       res.json({ok: true, render_url: renderUrl, thumbnail_url: thumbnailUrl});
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

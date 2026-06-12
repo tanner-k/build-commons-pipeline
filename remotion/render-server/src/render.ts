@@ -2,6 +2,7 @@ import {execFile} from 'node:child_process';
 import {mkdtemp, readFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {promisify} from 'node:util';
 import {bundle} from '@remotion/bundler';
 import {renderMedia, renderStill, selectComposition} from '@remotion/renderer';
@@ -20,7 +21,7 @@ const COMPOSITION_BY_TEMPLATE: Record<VideoRow['template'], string> = {
 let bundlePromise: Promise<string> | null = null;
 const getBundle = (): Promise<string> => {
   bundlePromise ??= bundle({
-    entryPoint: new URL('../../src/index.ts', import.meta.url).pathname,
+    entryPoint: fileURLToPath(new URL('../../src/index.ts', import.meta.url)),
   });
   return bundlePromise;
 };
