@@ -16,6 +16,7 @@
 - [ ] Phase 4: eval scaffold for prompts — evals/hook_quality.py + evals/script_quality.py (automated: word count, type diversity, hype scan, duration sum 30–60s, ai_broll ≤1; human: 1–5 rubric to JSONL)
 
 ## Later
+- [ ] Analyst: persist weekly templates.avg_retention snapshots and wire flag_declining_templates once 3+ weeks of history exist
 - [ ] Tutorial.tsx + Comparison.tsx compositions (Phase 6)
 - [ ] Remotion Lambda if >10 videos/week
 - [ ] OpusClip once long-form content exists
