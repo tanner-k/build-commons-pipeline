@@ -1,43 +1,35 @@
-# Architecture — build-commons-pipeline
+# Architecture
 
-## One-line
-Semi-automated short-form video pipeline with closed analytics feedback loop
-
-## System diagram
 ```
-┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
-│  agents/         │ ───▶ │  schemas/         │ ───▶ │  supabase/       │
-│  CrewAI + Python │      │  Pydantic + zod   │      │  Postgres + Stor.│
-└──────────────────┘      └──────────────────┘      └──────────────────┘
-         │                                                    ▲
-         ▼                                                    │
-┌──────────────────┐      ┌──────────────────┐               │
-│  remotion/       │ ───▶ │  n8n/            │ ──────────────┘
-│  React + ffmpeg  │      │  Orchestration   │
-└──────────────────┘      └──────────────────┘
+[CrewAI Agents] → [Asset Generation APIs] → [n8n Orchestrator] → [Remotion Render]
+       ↑                                           ↓
+[Taste Library / Supabase] ← [Analyst Agent] ← [Quality Gate (human)] → [Publish (YT/TikTok/IG)]
+                                                                              ↓
+                                                                    [Analytics Ingest]
 ```
 
-> Replace this ASCII sketch with a real diagram (Excalidraw, Mermaid, etc.) once the shape settles.
+Six stages (spec §7). Stages 1–3, 5, 6 automated; Stage 4 is the human gate.
 
-## Components
+| Stage | Component | Code |
+|---|---|---|
+| 1 Research/Scripting | CrewAI on Claude | `agents/trend_scraper.py`, `agents/hook_writer.py`, `agents/script_writer.py`, `agents/pipeline.py` |
+| 2 Asset generation | n8n fan-out (ElevenLabs, Nano Banana, Veo) | `n8n/workflows/generate.json` |
+| 3 Assembly | Express render server → Remotion → ffmpeg | `remotion/render-server/`, `remotion/src/` |
+| 4 Quality gate | Human (~15 min/video) | procedure in `docs/setup.md` §8 |
+| 5 Publishing | n8n cron → platform APIs | `n8n/workflows/publish.json` |
+| 6 Feedback loop | n8n ingest + analyst agent | `n8n/workflows/analytics.json`, `agents/analyst.py` |
 
-### agents/
-Python 3.12 · uv · CrewAI · Pydantic v2 · Claude. See [`../agents/context.md`](../agents/context.md).
+**Contract:** `schemas/video_script.py` (Pydantic, source of truth) ↔
+`remotion/src/types/video-script.ts` (zod mirror), pinned by the shared fixtures in
+`schemas/fixtures/` which both test suites validate.
 
-### schemas/
-Pydantic `VideoScript` contract (source of truth) + zod mirror in remotion/. See [`../schemas/context.md`](../schemas/context.md).
+**State machine** (`videos.status`): ideation → scripted → assets_ready → qa_pending →
+approved | rejected → published. Definition lives in
+`supabase/migrations/0001_init.sql`. Note: `rendered` is a reserved status value in the
+CHECK constraint but is currently unused — the render server transitions
+assets_ready → qa_pending directly once the render completes. The videos table also
+includes `thumbnail_url` (populated by Stage 3; Stage 4 previews the thumbnail from it).
 
-### remotion/
-Remotion 4 + React 18 + TypeScript (remotion/). See [`../remotion/context.md`](../remotion/context.md).
-
-### supabase/
-Supabase Postgres + Storage. See [`../supabase/context.md`](../supabase/context.md).
-
-### n8n/
-n8n self-hosted (Docker, Mac mini M4); renders local. See [`../n8n/context.md`](../n8n/context.md).
-
-## Decisions
-See [`./decisions/`](./decisions/) for the running ADR log.
-
-## Open questions
-- (Track unresolved design questions here. Move to an ADR once decided.)
+**Key decisions** (spec §3): one tool per job; single b-roll provider (Veo) unless
+failure rate >5%; no content logic in n8n; renders local on the Mac mini, Remotion
+Lambda only if >10 videos/week.
