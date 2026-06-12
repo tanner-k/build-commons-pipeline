@@ -89,6 +89,10 @@ class TestVideoScript:
         script = make_script()
         assert [s.id for s in script.all_segments()] == ["hook", "seg-1", "seg-2", "cta"]
 
+    def test_more_than_five_body_segments_rejected(self):
+        with pytest.raises(ValidationError):
+            make_script(segments=[make_segment(id=f"seg-{i}") for i in range(6)])
+
 
 class TestAssets:
     def test_word_timing_orders(self):

@@ -35,8 +35,10 @@ Hooks that performed well in this niche (steal the *patterns*, never the words):
 {example_block}
 
 Write exactly {HOOK_COUNT} hook variants. Mix hook types across: question, bold_claim, \
-curiosity_gap, demo. Each must be speakable in under 3 seconds (max ~12 words), concrete, \
-and contain zero hype words ("insane", "mind-blowing", "game-changer").
+curiosity_gap, demo. Each must be speakable in under 3 seconds (strictly 12 words or \
+fewer), concrete, and free of hype adjectives (no "insane", "incredible", "wild", \
+"mind-blowing", "game-changer", or anything in that register). Use each hook_type at \
+least once across the {HOOK_COUNT} variants.
 
 Respond with ONLY a JSON array:
 [{{"text": "...", "hook_type": "question|bold_claim|curiosity_gap|demo"}}]"""

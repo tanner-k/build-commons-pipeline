@@ -54,4 +54,10 @@ describe('contract mirror', () => {
       videoScriptSchema.parse({...sampleScript, hook: hookWithoutKey}),
     ).not.toThrow();
   });
+
+  it('rejects more than five body segments (parity with Python)', () => {
+    const seg = sampleScript.segments[0]!;
+    const six = Array.from({length: 6}, (_, i) => ({...seg, id: `seg-x${i}`}));
+    expect(() => videoScriptSchema.parse({...sampleScript, segments: six})).toThrow();
+  });
 });

@@ -25,6 +25,8 @@ def run_stage1(topic: str | None = None, template: str = "explainer") -> str:
 
     examples = top_taste_hooks(client=client)
     hooks = generate_hooks(topic, examples)
+    if not hooks:
+        raise RuntimeError("hook_writer returned zero variants — inspect the model response")
     print("[pipeline] hook variants:")
     for i, hook in enumerate(hooks, 1):
         print(f"  {i}. ({hook.hook_type}) {hook.text}")

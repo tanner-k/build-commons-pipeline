@@ -33,6 +33,8 @@ def insert_scripted_video(script: VideoScript, client: Client | None = None) -> 
         "script_json": script.model_dump(mode="json"),
     }
     result = client.table("videos").insert(row).execute()
+    if not result.data:
+        raise RuntimeError(f"Supabase insert returned no data for topic {script.topic!r}")
     return result.data[0]["id"]
 
 

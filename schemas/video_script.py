@@ -43,7 +43,7 @@ class VideoScript(BaseModel):
     topic: str = Field(min_length=1)
     template: TemplateName
     hook: Segment
-    segments: list[Segment] = Field(min_length=1)
+    segments: list[Segment] = Field(min_length=1, max_length=5)
     cta: Segment
     target_duration_s: int = Field(ge=30, le=60)
     platform_captions: dict[str, str]

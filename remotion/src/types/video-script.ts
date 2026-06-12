@@ -29,7 +29,7 @@ export const videoScriptSchema = z
     topic: z.string().min(1),
     template: z.enum(['explainer', 'tutorial', 'listicle', 'comparison']),
     hook: segmentSchema,
-    segments: z.array(segmentSchema).min(1),
+    segments: z.array(segmentSchema).min(1).max(5),
     cta: segmentSchema,
     target_duration_s: z.number().int().min(30).max(60),
     platform_captions: z.record(z.string()),

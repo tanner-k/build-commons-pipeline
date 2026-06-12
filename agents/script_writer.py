@@ -21,7 +21,7 @@ SCHEMA_GUIDE = """Output schema (respond with ONLY this JSON object, no commenta
   "topic": str,
   "template": "explainer" | "tutorial" | "listicle" | "comparison",
   "hook": Segment,        // the provided hook, duration_estimate_s <= 3
-  "segments": [Segment],  // 2-5 body segments
+  "segments": [Segment],  // 1-5 body segments (the contract enforces max 5)
   "cta": Segment,
   "target_duration_s": int (30-60),
   "platform_captions": {"youtube": str, "tiktok": str, "instagram": str},
@@ -34,7 +34,14 @@ Segment = {
   "visual_prompt": str | null (REQUIRED for ai_broll/ai_image; detailed, cinematic),
   "duration_estimate_s": float,
   "caption_emphasis": [str] (words to highlight in captions)
-}"""
+}
+visual_type selection guide:
+- "text_card": hook and CTA default — needs no generated asset
+- "screen_recording": workflow demos (operator records manually)
+- "ai_image": static concept illustration (one Nano Banana call)
+- "ai_broll": cinematic motion shot — use at most one per video (most expensive asset)
+caption_emphasis: pick 1-3 words per segment that carry the payoff \
+(verbs and numbers beat adjectives)."""
 
 
 def build_script_prompt(topic: str, hook_text: str, template: str) -> str:

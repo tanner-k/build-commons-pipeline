@@ -1,4 +1,5 @@
 import httpx
+import pytest
 
 from agents.trend_scraper import (
     RedditPost,
@@ -78,8 +79,5 @@ class TestFetchSubredditTop:
     def test_raises_on_http_error(self):
         transport = httpx.MockTransport(lambda req: httpx.Response(503))
         client = httpx.Client(transport=transport)
-        try:
+        with pytest.raises(httpx.HTTPStatusError):
             fetch_subreddit_top("ChatGPT", client=client)
-            raise AssertionError("expected an exception")
-        except httpx.HTTPStatusError:
-            pass
