@@ -60,6 +60,14 @@ describe('POST /render', () => {
     expect(res.body.error).toMatch(/assets_ready/);
   });
 
+  it('422 when template is missing or unknown (nullable DB column)', async () => {
+    mocks.fetchVideo.mockResolvedValue({...assetsReadyRow, template: null});
+    const res = await request(app).post('/render').send({video_id: 'vid-1'});
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/template/);
+    expect(mocks.renderVideoJob).not.toHaveBeenCalled();
+  });
+
   it('renders, updates row to qa_pending, returns urls', async () => {
     mocks.fetchVideo.mockResolvedValue(assetsReadyRow);
     mocks.renderVideoJob.mockResolvedValue({

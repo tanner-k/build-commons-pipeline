@@ -10,5 +10,16 @@
 
 <!-- Newest first -->
 
+## 2026-06-12
+- Shipped n8n workflow skeletons (generate/publish/analytics) with retry policy and structural tests
+- Shipped analyst agent: retention scoring, idempotent hook promotion, weekly markdown report
+- Wrote setup guide (accounts, n8n Phase-3 wiring checklist) and architecture map
+
+## 2026-06-11
+- Shipped Explainer/Listicle compositions + branded Thumbnail still with word-synced captions
+- Shipped Express render server: POST /render renders video+thumbnail, compresses, updates Supabase
+- Shipped Stage-1 CrewAI agents (trends, hooks, script) + pipeline CLI
+
 ## 2026-06-10
+- Shipped VideoScript contract (Pydantic + zod mirror + shared fixtures) and Supabase schema
 - Scaffolded project from the Tree template

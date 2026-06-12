@@ -23,7 +23,7 @@ Semi-automated short-form video pipeline (CrewAI → assets → Remotion → hum
 - `schemas/video_script.py` is the contract source of truth. Any change MUST be mirrored in `remotion/src/types/video-script.ts` and validated against `schemas/fixtures/sample_video_script.json` on both sides.
 - One tool per job (spec §3). Do not add overlapping providers/services.
 - No content logic in n8n — n8n is plumbing only.
-- Statuses: ideation → scripted → assets_ready → rendered → qa_pending → approved|rejected → published. Only the DB constraint in `supabase/migrations/` defines valid values.
+- Statuses: ideation → scripted → assets_ready → qa_pending → approved|rejected → published ('rendered' is reserved/unused — the render server goes assets_ready → qa_pending directly). Only the DB constraint in `supabase/migrations/` defines valid values. The render server also persists `render_url` + `thumbnail_url`; Stage-4 rejection notes go in `qa_notes`.
 - Never publish with a missing asset; retries are 2 per provider then manual-review flag.
 
 ## Working state

@@ -47,7 +47,11 @@ uv run python -m agents.analyst report                # Stage 6: weekly report
 Last 5 entries from [CHANGELOG.md](./CHANGELOG.md):
 
 <!-- BEGIN:RECENT-UPDATES -->
-- (auto-populated by `scripts/done.py` once you ship something)
+- Shipped n8n workflow skeletons (generate/publish/analytics) with retry policy and structural tests
+- Shipped analyst agent: retention scoring, idempotent hook promotion, weekly markdown report
+- Wrote setup guide (accounts, n8n Phase-3 wiring checklist) and architecture map
+- Shipped Explainer/Listicle compositions + branded Thumbnail still with word-synced captions
+- Shipped Express render server: POST /render renders video+thumbnail, compresses, updates Supabase
 <!-- END:RECENT-UPDATES -->
 
 ## Project map
