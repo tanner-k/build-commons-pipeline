@@ -61,12 +61,22 @@ def insert_enhanced_video(
 ) -> str:
     """Insert an enhance-track row at status=plan_ready. Returns the new video id."""
     client = client or get_client()
+    captions = plan.platform_captions
+    # Title for the publish/QA lists. Prefer the YouTube caption, else any caption.
+    topic = captions.get("youtube") or next(iter(captions.values()), "Enhanced video")
     row = {
         "kind": "enhanced",
         "status": "plan_ready",
+        "topic": topic,
         "source_video_url": plan.source_video_url,
         "transcript": transcript,
         "enhancement_json": plan.model_dump(mode="json"),
+        # publish.json reads captions/hashtags from script_json — mirror them here so the
+        # existing publish workflow serves enhanced rows unchanged (spec: zero publish changes).
+        "script_json": {
+            "platform_captions": captions,
+            "hashtags": plan.hashtags,
+        },
     }
     result = client.table("videos").insert(row).execute()
     if not result.data:

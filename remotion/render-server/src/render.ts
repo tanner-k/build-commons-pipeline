@@ -64,7 +64,11 @@ export const renderVideoJob = async (video: VideoRow): Promise<RenderResult> => 
       await renderMedia({composition, serveUrl, codec: 'h264', outputLocation: rawPath, inputProps});
       await compress(rawPath, finalPath);
       const thumbProps = {
-        headline: plan.platform_captions['youtube'] ?? 'Build Commons',
+        // platform_captions has no guaranteed key set — fall back through any caption.
+        headline:
+          plan.platform_captions['youtube'] ??
+          Object.values(plan.platform_captions)[0] ??
+          'Build Commons',
         baseImageUrl: null,
       };
       const thumbComposition = await selectComposition({

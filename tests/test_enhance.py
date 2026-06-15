@@ -94,3 +94,28 @@ class TestSummary:
         assert "ai_image" in md and "screen_recording" in md
         assert "2.0" in md  # a start time
         assert "SCREEN REC" in md.upper()  # flags the manual swap
+
+
+class TestInsertEnhancedVideo:
+    def test_populates_script_json_and_topic_for_publish(self):
+        from unittest.mock import MagicMock
+
+        from agents.db import insert_enhanced_video
+
+        plan = parse_enhancement_plan(GOOD_LLM_JSON, SRC, 20.0)
+        client = MagicMock()
+        result = MagicMock()
+        result.data = [{"id": "vid-9"}]
+        client.table.return_value.insert.return_value.execute.return_value = result
+
+        video_id = insert_enhanced_video(plan, transcript=[], client=client)
+
+        assert video_id == "vid-9"
+        row = client.table.return_value.insert.call_args.args[0]
+        assert row["kind"] == "enhanced" and row["status"] == "plan_ready"
+        # publish.json reads platform_captions/hashtags from script_json — must be present here
+        assert row["script_json"]["platform_captions"] == plan.platform_captions
+        assert row["script_json"]["hashtags"] == plan.hashtags
+        # topic drives the publish title; never empty for an enhanced row
+        assert row["topic"] == "How I built it"
+        assert row["enhancement_json"]["source_video_url"] == SRC
