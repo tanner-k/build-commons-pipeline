@@ -1,0 +1,136 @@
+{
+  "name": "BC Enhance — Overlay Assets + Render",
+  "nodes": [
+    {
+      "parameters": {"rule": {"interval": [{"field": "minutes", "minutesInterval": 15}]}},
+      "id": "trigger-15min",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id, enhancement_json from videos where kind = 'enhanced' and status = 'plan_approved' order by created_at limit 1"
+      },
+      "id": "fetch-approved-plans",
+      "name": "Fetch approved plans",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "enhancement_json.overlays",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "id"
+      },
+      "id": "split-overlays",
+      "name": "Split overlays",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"contents\": [{\"parts\": [{\"text\": {{ JSON.stringify($json[\"enhancement_json.overlays\"].prompt || \"\") }}}]}]}"
+      },
+      "id": "nano-banana",
+      "name": "Nano Banana still (ai_image)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, -90],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:predictLongRunning",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"instances\": [{\"prompt\": {{ JSON.stringify($json[\"enhancement_json.overlays\"].prompt || \"\") }}}]}"
+      },
+      "id": "veo",
+      "name": "Veo b-roll (ai_broll)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 90],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update videos set status = 'assets_ready', enhancement_json = $1::jsonb where id = $2",
+        "options": {"queryReplacement": "={{ JSON.stringify($json.enhancement_json) }},{{ $json.id }}"}
+      },
+      "id": "save-overlays",
+      "name": "Save overlay asset_urls",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3333/render",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"video_id\": \"{{ $json.id }}\"}"
+      },
+      "id": "trigger-render",
+      "name": "Trigger render",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update videos set qa_notes = concat(coalesce(qa_notes, ''), ' overlay asset generation failed after retries — manual review') where id = $1",
+        "options": {"queryReplacement": "={{ $json.id }}"}
+      },
+      "id": "flag-manual",
+      "name": "Flag manual review",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 220]
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {"main": [[{"node": "Fetch approved plans", "type": "main", "index": 0}]]},
+    "Fetch approved plans": {"main": [[{"node": "Split overlays", "type": "main", "index": 0}]]},
+    "Split overlays": {
+      "main": [[
+        {"node": "Nano Banana still (ai_image)", "type": "main", "index": 0},
+        {"node": "Veo b-roll (ai_broll)", "type": "main", "index": 0}
+      ]]
+    },
+    "Nano Banana still (ai_image)": {
+      "main": [
+        [{"node": "Save overlay asset_urls", "type": "main", "index": 0}],
+        [{"node": "Flag manual review", "type": "main", "index": 0}]
+      ]
+    },
+    "Veo b-roll (ai_broll)": {
+      "main": [
+        [{"node": "Save overlay asset_urls", "type": "main", "index": 0}],
+        [{"node": "Flag manual review", "type": "main", "index": 0}]
+      ]
+    },
+    "Save overlay asset_urls": {"main": [[{"node": "Trigger render", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}
