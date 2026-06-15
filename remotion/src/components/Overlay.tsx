@@ -20,33 +20,39 @@ const PlaceholderCard: React.FC<{label: string; tone?: string}> = ({label, tone}
   </AbsoluteFill>
 );
 
+// Own component so its hooks are always called unconditionally (Rules of Hooks):
+// Visual() has early returns, so hooks must never live in one of its branches.
+const TextEffectVisual: React.FC<{text: string}> = ({text}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const pop = spring({frame, fps, config: {damping: 12, mass: 0.5}});
+  return (
+    <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', padding: 48}}>
+      <div
+        style={{
+          color: BRAND.text,
+          backgroundColor: 'rgba(11,18,32,0.72)',
+          padding: '20px 32px',
+          borderRadius: 18,
+          fontSize: 64,
+          fontWeight: 800,
+          textAlign: 'center',
+          transform: `scale(${0.9 + 0.1 * pop})`,
+        }}
+      >
+        {text}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const Visual: React.FC<{overlay: OverlayT}> = ({overlay}) => {
   const url = overlay.asset_url ?? '';
   if (overlay.type === 'screen_recording') {
     return <PlaceholderCard label={`SCREEN REC:\n${overlay.text ?? ''}`} />;
   }
   if (overlay.type === 'text_effect') {
-    const frame = useCurrentFrame();
-    const {fps} = useVideoConfig();
-    const pop = spring({frame, fps, config: {damping: 12, mass: 0.5}});
-    return (
-      <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', padding: 48}}>
-        <div
-          style={{
-            color: BRAND.text,
-            backgroundColor: 'rgba(11,18,32,0.72)',
-            padding: '20px 32px',
-            borderRadius: 18,
-            fontSize: 64,
-            fontWeight: 800,
-            textAlign: 'center',
-            transform: `scale(${0.9 + 0.1 * pop})`,
-          }}
-        >
-          {overlay.text}
-        </div>
-      </AbsoluteFill>
-    );
+    return <TextEffectVisual text={overlay.text ?? ''} />;
   }
   if (!url) {
     return <PlaceholderCard label={`${overlay.type}:\n${overlay.prompt ?? ''}`} tone={BRAND.muted} />;
