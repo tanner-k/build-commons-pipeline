@@ -1,11 +1,15 @@
 """Supabase access for agents. Every function takes an injectable client for testing."""
 
 import os
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
 from schemas.video_script import VideoScript
 from supabase import Client, create_client
+
+if TYPE_CHECKING:
+    from schemas.enhancement import EnhancementPlan
 
 
 class TasteExample(BaseModel):
@@ -50,3 +54,27 @@ def top_taste_hooks(limit: int = 20, client: Client | None = None) -> list[Taste
         .execute()
     )
     return [TasteExample.model_validate(r) for r in result.data]
+
+
+def insert_enhanced_video(
+    plan: "EnhancementPlan", transcript: list[dict], client: Client | None = None
+) -> str:
+    """Insert an enhance-track row at status=plan_ready. Returns the new video id."""
+    client = client or get_client()
+    row = {
+        "kind": "enhanced",
+        "status": "plan_ready",
+        "source_video_url": plan.source_video_url,
+        "transcript": transcript,
+        "enhancement_json": plan.model_dump(mode="json"),
+    }
+    result = client.table("videos").insert(row).execute()
+    if not result.data:
+        raise RuntimeError("Supabase insert returned no data for enhanced video")
+    return result.data[0]["id"]
+
+
+def set_video_status(video_id: str, status: str, client: Client | None = None) -> None:
+    """Move a video to a new status (e.g. plan_approved)."""
+    client = client or get_client()
+    client.table("videos").update({"status": status}).eq("id", video_id).execute()
