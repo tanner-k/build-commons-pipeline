@@ -22,10 +22,29 @@ const app = createApp();
 const assetsReadyRow = {
   id: 'vid-1',
   status: 'assets_ready',
+  kind: 'generated',
   template: 'explainer',
   topic: 'Topic',
   script_json: {},
   asset_urls: {},
+  enhancement_json: null,
+};
+
+const enhancedReadyRow = {
+  id: 'enh-1',
+  status: 'assets_ready',
+  kind: 'enhanced',
+  template: null,
+  topic: 'My build',
+  script_json: null,
+  asset_urls: null,
+  enhancement_json: {
+    source_video_url: 'https://x/v.mp4',
+    source_duration_s: 10,
+    overlays: [],
+    platform_captions: {youtube: 'x'},
+    hashtags: {youtube: ['#x']},
+  },
 };
 
 beforeEach(() => {
@@ -94,5 +113,20 @@ describe('POST /render', () => {
     const res = await request(app).post('/render').send({video_id: 'vid-1'});
     expect(res.status).toBe(500);
     expect(mocks.updateVideo).not.toHaveBeenCalled();
+  });
+
+  it('renders an enhanced (kind=enhanced) row even though template is null', async () => {
+    mocks.fetchVideo.mockResolvedValue(enhancedReadyRow);
+    mocks.renderVideoJob.mockResolvedValue({
+      renderUrl: 'https://x/renders/enh-1.mp4',
+      thumbnailUrl: 'https://x/renders/enh-1.png',
+    });
+    const res = await request(app).post('/render').send({video_id: 'enh-1'});
+    expect(res.status).toBe(200);
+    expect(mocks.updateVideo).toHaveBeenCalledWith('enh-1', {
+      status: 'qa_pending',
+      render_url: 'https://x/renders/enh-1.mp4',
+      thumbnail_url: 'https://x/renders/enh-1.png',
+    });
   });
 });

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 WORKFLOWS_DIR = Path(__file__).parent.parent / "n8n" / "workflows"
-WORKFLOW_FILES = ["generate.json", "publish.json", "analytics.json"]
+WORKFLOW_FILES = ["generate.json", "publish.json", "analytics.json", "enhance.json"]
 
 
 @pytest.fixture(params=WORKFLOW_FILES)
@@ -48,3 +48,15 @@ def test_provider_nodes_have_retries():
     for node in provider_nodes:
         assert node.get("retryOnFail") is True, f"{node['name']} missing retryOnFail"
         assert node.get("maxTries") == 3, f"{node['name']} should have maxTries=3 (2 retries)"
+
+
+def test_enhance_overlay_node_has_retries():
+    wf = json.loads((WORKFLOWS_DIR / "enhance.json").read_text())
+    providers = [
+        n for n in wf["nodes"]
+        if n["type"] == "n8n-nodes-base.httpRequest" and "render" not in n["name"].lower()
+    ]
+    assert providers, "expected provider HTTP nodes in enhance.json"
+    for n in providers:
+        assert n.get("retryOnFail") is True, f"{n['name']} missing retryOnFail"
+        assert n.get("maxTries") == 3, f"{n['name']} should have maxTries=3"

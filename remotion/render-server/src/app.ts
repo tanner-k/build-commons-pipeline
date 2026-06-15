@@ -33,7 +33,7 @@ export const createApp = (): Express => {
         });
         return;
       }
-      if (!RENDERABLE_TEMPLATES.has(video.template)) {
+      if (video.kind !== 'enhanced' && !RENDERABLE_TEMPLATES.has(video.template ?? '')) {
         res.status(422).json({
           error: `video ${videoId} has unknown/missing template '${video.template}'`,
         });

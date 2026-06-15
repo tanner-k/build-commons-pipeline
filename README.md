@@ -65,17 +65,29 @@ ideation → scripted → assets_ready → qa_pending → approved → published
 
 ### Manual track (you already have a raw video)
 
-For screen recordings, face-on-camera, sponsor reads, or same-day trend reactions there's nothing to generate — you skip Stages 1–3. Edit your clip in CapCut, upload it to Supabase Storage, then drop it into the flow at the publishing step by inserting a row with your finished file as `render_url`:
+Two ways in, depending on whether you want the pipeline to add visuals for you:
+
+**A) Auto-enhance a talking-head video.** Upload your raw clip to Supabase Storage, then let Claude suggest and composite timed overlays (AI b-roll, stills, text effects, screen-recording placeholders) onto your footage:
+
+```bash
+uv run python -m agents.enhance plan --video <supabase_url> --local ./my-talk.mp4   # transcribe + propose a plan
+# review the printed plan, then:
+uv run python -m agents.enhance approve --id <video_id>                              # kicks off asset gen + compositing
+```
+
+It transcribes locally (Whisper), Claude writes a reviewable overlay plan (the checkpoint), and on approval n8n generates the AI assets and the render server composites them onto your video into the same `qa_pending` review queue. Screen-recording overlays render as a labeled placeholder you swap for your real capture in CapCut.
+
+**B) Drop a finished clip straight into publishing.** For fully self-edited videos (sponsor reads, same-day reactions), skip Stages 1–3 entirely — insert a row with your finished file as `render_url`:
 
 ```sql
-insert into videos (status, topic, template, render_url, script_json)
-values ('approved', 'My screen-recording tutorial', 'tutorial',
+insert into videos (status, kind, topic, template, render_url, script_json)
+values ('approved', 'generated', 'My screen-recording tutorial', 'tutorial',
         'https://<your-project>.supabase.co/storage/v1/object/public/renders/my-clip.mp4',
         '{"platform_captions": {"youtube": "...", "tiktok": "...", "instagram": "..."},
           "hashtags": {"youtube": ["#..."], "tiktok": ["#..."], "instagram": ["#..."]}}'::jsonb);
 ```
 
-The publisher treats it identically to a generated video. Use `qa_pending` instead of `approved` if you still want it to pass through your own review queue first.
+Both converge at the publisher. Use `qa_pending` instead of `approved` to pass through your own review queue first.
 
 ## Commands
 

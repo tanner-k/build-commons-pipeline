@@ -124,3 +124,10 @@ uv run python -m agents.analyst report   # writes docs/reports/YYYY-MM-DD-weekly
 ```
 
 Schedule it (e.g. Sunday 7am) via launchd or an n8n Execute Command node.
+
+## Enhance track (auto-composite a talking-head video)
+
+1. Apply migration `supabase/migrations/0002_enhancement.sql` (adds `kind`, `source_video_url`, `transcript`, `enhancement_json` + the `uploaded`/`plan_ready`/`plan_approved` statuses).
+2. First run downloads a Whisper model (~150 MB) to cache; subsequent runs are offline.
+3. `uv run python -m agents.enhance plan --video <url> --local <path>` → review the printed plan → `... approve --id <id>`.
+4. Phase-3 n8n wiring for `enhance.json`: map each generated overlay asset back into `enhancement_json.overlays[].asset_url` before the `Save overlay asset_urls` write (the committed workflow is a skeleton, same as generate/publish). Screen-recording and text_effect overlays need no generated asset.
