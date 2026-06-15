@@ -4,10 +4,12 @@ import {config} from './config';
 export type VideoRow = {
   id: string;
   status: string;
-  template: 'explainer' | 'tutorial' | 'listicle' | 'comparison';
+  kind: 'generated' | 'enhanced';
+  template: 'explainer' | 'tutorial' | 'listicle' | 'comparison' | null;
   topic: string;
   script_json: unknown;
   asset_urls: unknown;
+  enhancement_json: unknown;
 };
 
 let client: SupabaseClient | null = null;
@@ -19,7 +21,7 @@ const getClient = (): SupabaseClient => {
 export const fetchVideo = async (id: string): Promise<VideoRow | null> => {
   const {data, error} = await getClient()
     .from('videos')
-    .select('id,status,template,topic,script_json,asset_urls')
+    .select('id,status,kind,template,topic,script_json,asset_urls,enhancement_json')
     .eq('id', id)
     .maybeSingle();
   if (error) throw new Error(`fetchVideo(${id}): ${error.message}`);
