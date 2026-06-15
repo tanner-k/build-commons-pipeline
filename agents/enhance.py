@@ -33,7 +33,12 @@ HARD_CONSTRAINTS = """HARD CONSTRAINTS (violating any makes the plan unusable):
 - ai_broll/ai_image MUST include a detailed cinematic "prompt" and null "text".
 - screen_recording/text_effect MUST include "text" (the label/words) and null "prompt".
 - Every overlay needs a one-line "rationale" tied to what is being said at that moment.
-- Anchor each overlay to the transcript timestamps — enhance the actual claims, not filler."""
+- Anchor each overlay to the transcript timestamps — enhance the actual claims, not filler.
+- start_s must be >= 0 and end_s must NEVER exceed the video length stated above — do
+  not run an overlay past the end of the video.
+- Give every overlay a unique sequential id: ov-1, ov-2, ov-3, …
+- "asset_url" must always be null — it is filled in later after asset generation, not by
+  you."""
 
 SCHEMA_GUIDE = """Respond with ONLY this JSON object (no commentary):
 {
@@ -56,6 +61,9 @@ visual overlays that make it more engaging and clearer, anchored to what is said
 
 Transcript:
 {transcript_text}
+
+The video is exactly {duration_s:.0f} seconds long; every overlay's end_s must be <=
+{duration_s:.0f}.
 
 {HARD_CONSTRAINTS}
 

@@ -49,12 +49,19 @@ class TestPrompt:
         low = HARD_CONSTRAINTS.lower()
         for phrase in ("overlap", "placement", "rationale", "screen_recording"):
             assert phrase in low
+        assert "null" in low  # asset_url must be null at plan time
+        assert "unique" in low  # unique ids
 
     def test_prompt_embeds_transcript_and_duration(self):
         p = build_enhancement_prompt("[0.0-3.0] hello world", 30.0)
         assert "hello world" in p
         assert "30" in p
         assert "overlays" in p
+
+    def test_prompt_states_concrete_duration_bound(self):
+        p = build_enhancement_prompt("[0.0-3.0] hi", 42.0)
+        # explicit end_s bound the model can't miss (may wrap across lines)
+        assert "end_s must be" in p and "42" in p
 
 
 class TestParse:

@@ -77,4 +77,6 @@ def insert_enhanced_video(
 def set_video_status(video_id: str, status: str, client: Client | None = None) -> None:
     """Move a video to a new status (e.g. plan_approved)."""
     client = client or get_client()
-    client.table("videos").update({"status": status}).eq("id", video_id).execute()
+    result = client.table("videos").update({"status": status}).eq("id", video_id).execute()
+    if not result.data:
+        raise RuntimeError(f"no video found with id {video_id!r}")
