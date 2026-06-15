@@ -1,0 +1,60 @@
+{
+  "source_video_url": "https://example.supabase.co/storage/v1/object/public/uploads/build-commons-demo.mp4",
+  "source_duration_s": 48.0,
+  "overlays": [
+    {
+      "id": "ov-1",
+      "start_s": 3.0,
+      "end_s": 9.0,
+      "type": "ai_broll",
+      "placement": "fullframe",
+      "prompt": "Cinematic slow push-in over a tidy developer desk at night, glowing monitor, warm amber key light, shallow depth of field, 4k",
+      "text": null,
+      "rationale": "Opening context while the speaker sets up the problem",
+      "asset_url": null
+    },
+    {
+      "id": "ov-2",
+      "start_s": 12.5,
+      "end_s": 18.0,
+      "type": "ai_image",
+      "placement": "pip",
+      "prompt": "Clean isometric illustration of a three-stage data pipeline, dark navy background, amber accent nodes, soft shadows",
+      "text": null,
+      "rationale": "Speaker names the three pipeline stages — show them",
+      "asset_url": null
+    },
+    {
+      "id": "ov-3",
+      "start_s": 20.0,
+      "end_s": 27.0,
+      "type": "screen_recording",
+      "placement": "fullframe",
+      "prompt": null,
+      "text": "the render server returning a video_id",
+      "rationale": "Live demo of the actual API call lands trust",
+      "asset_url": null
+    },
+    {
+      "id": "ov-4",
+      "start_s": 30.0,
+      "end_s": 34.0,
+      "type": "text_effect",
+      "placement": "pip",
+      "prompt": null,
+      "text": "2-5 min / video",
+      "rationale": "Reinforce the render-time stat the speaker quotes",
+      "asset_url": null
+    }
+  ],
+  "platform_captions": {
+    "youtube": "How I built a semi-automated video pipeline",
+    "tiktok": "I automated 70% of my video editing 👇",
+    "instagram": "The build, end to end."
+  },
+  "hashtags": {
+    "youtube": ["#buildinpublic", "#ai", "#automation"],
+    "tiktok": ["#buildinpublic", "#aitools", "#devtok"],
+    "instagram": ["#buildinpublic", "#automation"]
+  }
+}
