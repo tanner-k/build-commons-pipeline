@@ -6,8 +6,8 @@ Semi-automated short-form video pipeline (CrewAI → assets → Remotion → hum
 
 | Folder | Owns | Context |
 |---|---|---|
-| `schemas/` | Pydantic `VideoScript` contract (source of truth) + shared fixtures | `schemas/context.md` |
-| `agents/` | CrewAI Stage-1 agents (trend_scraper, hook_writer, script_writer) + analyst + pipeline CLI | `agents/context.md` |
+| `schemas/` | Pydantic `VideoScript` contract (source of truth) + shared fixtures + `EnhancementPlan` | `schemas/context.md` |
+| `agents/` | CrewAI Stage-1 agents (trend_scraper, hook_writer, script_writer) + analyst + pipeline CLI + enhance (raw-video → overlay plan) | `agents/context.md` |
 | `remotion/` | Compositions, brand components, TS contract mirror, render server | `remotion/context.md` |
 | `supabase/` | SQL migrations (videos, analytics, taste_library, templates) | `supabase/context.md` |
 | `n8n/` | Workflow JSON exports (generate/publish/analytics) | `n8n/context.md` |
@@ -25,6 +25,7 @@ Semi-automated short-form video pipeline (CrewAI → assets → Remotion → hum
 - No content logic in n8n — n8n is plumbing only.
 - Statuses: ideation → scripted → assets_ready → qa_pending → approved|rejected → published ('rendered' is reserved/unused — the render server goes assets_ready → qa_pending directly). Only the DB constraint in `supabase/migrations/` defines valid values. The render server also persists `render_url` + `thumbnail_url`; Stage-4 rejection notes go in `qa_notes`.
 - Never publish with a missing asset; retries are 2 per provider then manual-review flag.
+- Enhance track (manual): `agents/enhance.py` + `agents/transcribe.py` turn an uploaded video into an `EnhancementPlan` (`schemas/enhancement.py` ↔ `remotion/src/types/enhancement.ts`), composited by the `EnhancedTalkingHead` composition. `kind=enhanced` rows skip the template guard.
 
 ## Working state
 
