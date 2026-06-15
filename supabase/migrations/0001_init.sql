@@ -8,7 +8,7 @@ create table if not exists videos (
     -- 'rendered' is reserved but currently unused: the render server moves
     -- assets_ready -> qa_pending in one step (spec §7 Stage 3).
     status text not null default 'ideation'
-        check (status in (
+        constraint videos_status_check check (status in (
             'ideation', 'scripted', 'assets_ready', 'rendered',
             'qa_pending', 'approved', 'rejected', 'published'
         )),
